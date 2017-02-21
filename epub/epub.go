@@ -16,6 +16,19 @@ var (
 		"contributor", "date", "type", "format", "source", "relation", "coverage", "rights", "meta"}
 )
 
+func LoadEpub(bookPath string) (*Epub, error) {
+	zipReader, err := raw.NewEpub(bookPath)
+	if err != nil {
+		return nil, err
+	}
+	defer zipReader.Close()
+	epub, err := NewEpub(zipReader)
+	if err != nil {
+		return nil, err
+	}
+	return epub, nil
+}
+
 func NewEpub(src *raw.Epub) (*Epub, error) {
 	epub := &Epub{
 		MetaInfo:    make(map[string]string),
@@ -46,6 +59,7 @@ func NewEpub(src *raw.Epub) (*Epub, error) {
 		}
 		nav.CharactorCountSelf = len(content)
 		nav.CharactorCountTotal = nav.CharactorCountSelf
+		epub.CharactorCount += nav.CharactorCountSelf
 		return nil
 	})
 
@@ -60,27 +74,6 @@ func NewEpub(src *raw.Epub) (*Epub, error) {
 
 	return epub, nil
 }
-
-// func generateNaviPoints(nps raw.NavPointArray, IndexInList, level, currentCount int, tagPre string, points NavigationPointArray) (NavigationPointArray, int) {
-// 	if points == nil {
-// 		points = NavigationPointArray{}
-// 	}
-// 	if nps == nil || len(nps) <= 0 {
-// 		return points, currentCount
-// 	}
-
-// 	head_np := nps[0]
-// 	point := NewNavigationPoint(head_np, level, IndexInList, tagPre)
-// 	points = append(points, point)
-
-// 	if head_np.Children() != nil {
-// 		new_points, count := generateNaviPoints(head_np.Children(), 1, level+1, point.CharactorCountSelf, point.Tag, nil)
-// 		points = append(points, new_points...)
-// 		point.CharactorCountTotal += count
-// 	}
-
-// 	return generateNaviPoints(nps[1:], IndexInList+1, level, currentCount+point.CharactorCountTotal, tagPre, points)
-// }
 
 func generateNaviPoints(nps raw.NavPointArray, IndexInList, level int, tagPre string, points NavigationPointArray) NavigationPointArray {
 	if points == nil {
@@ -102,10 +95,21 @@ func generateNaviPoints(nps raw.NavPointArray, IndexInList, level int, tagPre st
 }
 
 type Epub struct {
-	Navigations    NavigationPointArray
-	MetaInfo       map[string]string
-	CharactorCount int
+	Navigations    NavigationPointArray `json:"navigations"`
+	MetaInfo       map[string]string    `json:"meta"`
+	CharactorCount int                  `json:"charactor_count"`
+	Url            string               `json:"url"`
 }
+
+func (e *Epub) Meta(field string) string {
+	if v, exists := e.MetaInfo[field]; exists {
+		return v
+	} else {
+		return ""
+	}
+}
+
+type EpubArray []*Epub
 
 func getHtmlContent(reader io.Reader) ([]rune, error) {
 	b, err := ioutil.ReadAll(reader)

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ssor/epubgo/raw"
 )
 
 const (
@@ -30,17 +29,21 @@ func TestEpub(t *testing.T) {
 }
 
 func openBook(bookPath string, t *testing.T) {
-	zipReader, err := raw.NewEpub(bookPath)
-	if err != nil {
-		t.Fatalf("Open(%v) return an error: %v", bookPath, err)
-	}
-	defer zipReader.Close()
-	epub, err := NewEpub(zipReader)
+	// zipReader, err := raw.NewEpub(bookPath)
+	// if err != nil {
+	// 	t.Fatalf("Open(%v) return an error: %v", bookPath, err)
+	// }
+	// defer zipReader.Close()
+	// epub, err := NewEpub(zipReader)
+	// if err != nil {
+	// 	t.Fatal("init epub err: ", err)
+	// }
+	// spew.Dump(epub)
+	epub, err := LoadEpub(bookPath)
 	if err != nil {
 		t.Fatal("init epub err: ", err)
 	}
-	// spew.Dump(epub)
-
+	fmt.Println("*** ", epub.Meta("title"), " 总字数: ", epub.CharactorCount)
 	fmt.Printf("%-8s  %-6s %-6s %-15s %s\n", "", "本页字数", "章节总字数", "文件", "目录名称")
 	for _, nav := range epub.Navigations {
 		fmt.Printf("%-8s  %-10d %-10d %10s %s\n", nav.Tag, nav.CharactorCountSelf, nav.CharactorCountTotal, nav.Url, strings.Repeat("-", nav.Level*4)+nav.Title)

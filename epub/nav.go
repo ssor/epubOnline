@@ -28,12 +28,12 @@ func NewNavigationPoint(src *raw.NavPoint, level, IndexInList int, tagPre string
 }
 
 type NavigationPoint struct {
-	Title               string
-	CharactorCountSelf  int
-	CharactorCountTotal int
-	Level               int
-	Url                 string
-	Tag                 string //like 1.1 or 1.2.1
+	Title               string `json:"title"`
+	CharactorCountSelf  int    `json:"charactor_count"`
+	CharactorCountTotal int    `json:"total_charactor_count"`
+	Level               int    `json:"level"`
+	Url                 string `json:"-"`
+	Tag                 string `json:"tag"` //like 1.1 or 1.2.1
 }
 
 type NavigationPointArray []*NavigationPoint
