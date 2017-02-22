@@ -8,13 +8,11 @@ import (
 
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ssor/epubgo/raw"
 )
 
-var (
-	meta_list = []string{"title", "language", "identifier", "creator", "subject", "description", "publisher",
-		"contributor", "date", "type", "format", "source", "relation", "coverage", "rights", "meta"}
-)
+var ()
 
 func LoadEpub(bookPath string) (*Epub, error) {
 	zipReader, err := raw.NewEpub(bookPath)
@@ -31,17 +29,16 @@ func LoadEpub(bookPath string) (*Epub, error) {
 
 func NewEpub(src *raw.Epub) (*Epub, error) {
 	epub := &Epub{
-		MetaInfo:    make(map[string]string),
 		Navigations: NavigationPointArray{},
 	}
+	// spew.Dump(src)
 
-	for _, meta := range meta_list {
-		ls, err := src.Metadata(meta)
-		if err != nil {
-			fmt.Println("[TIP] get meta info: ", err)
-			ls = []string{}
-		}
-		epub.MetaInfo[meta] = strings.Join(ls, " ")
+	meta_list := []string{"title", "language", "identifier", "creator", "subject", "description", "publisher", "contributor", "date", "type", "format", "source", "relation", "coverage", "rights"}
+	epub.MetaInfo = generateMetaInfo(meta_list, src.Metadata)
+
+	if len(epub.MetaInfo["coverage"]) <= 0 {
+		cover_id := getCover(src.MetadataAttr)
+		epub.MetaInfo["coverage"] = src.GetFileHrefByID(cover_id)
 	}
 
 	epub.Navigations = generateNaviPoints(src.NavPoints(), 1, 1, "", nil)
@@ -62,7 +59,6 @@ func NewEpub(src *raw.Epub) (*Epub, error) {
 		epub.CharactorCount += nav.CharactorCountSelf
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +69,40 @@ func NewEpub(src *raw.Epub) (*Epub, error) {
 	})
 
 	return epub, nil
+}
+
+func generateMetaInfo(meta_list []string, f func(string) ([]string, error)) map[string]string {
+	meta_info := make(map[string]string)
+
+	for _, meta := range meta_list {
+		ls, err := f(meta)
+		if err != nil {
+			fmt.Println("[TIP] get meta info: ", err)
+			ls = []string{}
+		}
+		meta_info[meta] = strings.Join(ls, " ")
+	}
+	return meta_info
+}
+
+func getCover(f func(string) ([]map[string]string, error)) string {
+
+	attributes_meta, err := f("meta")
+	if err != nil {
+		fmt.Println("[ERR] get meta err: ", err)
+		return ""
+	}
+	spew.Dump(attributes_meta)
+	for _, atr := range attributes_meta {
+		if name, exists := atr["name"]; exists && name == "cover" {
+			// fmt.Println("name -> ", name)
+			if content, exists := atr["content"]; exists {
+				// fmt.Println("content -> ", content)
+				return content
+			}
+		}
+	}
+	return ""
 }
 
 func generateNaviPoints(nps raw.NavPointArray, IndexInList, level int, tagPre string, points NavigationPointArray) NavigationPointArray {
