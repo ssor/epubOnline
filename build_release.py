@@ -26,7 +26,7 @@ def hasHidePath(path):
 	if paths[0] == ".":
 		paths = paths[1:]
 
-	if len(paths[0]) &lt;= 0:
+	if len(paths[0]) <= 0:
 		return False
 
 	for p in paths:
@@ -36,7 +36,7 @@ def hasHidePath(path):
 	return False
 
 # set files and paths that should be exclued from release files
-ignoredDirs = ["controller", "tests", "release", "test"]
+ignoredDirs = ["controller", "tests", "release", "test", "epub"]
 ignoredFiles = ["build_release.py", "main.go", "conf/config.json"]
 
 
