@@ -15,7 +15,7 @@ import (
 var (
 	configFile    = flag.String("config", "conf/config.json", "config file for system")
 	listeningPort = flag.String("port", "8092", "listeningPort")
-	book_dir      = "books/"
+	book_dir      = "books_raw"
 	books         = epub.EpubArray{}
 )
 
@@ -30,7 +30,7 @@ func main() {
 
 	router := gin.Default()
 	router.Static("/javascripts", "static/js")
-	router.Static("/epub", "books")
+	router.Static("/epub", book_dir)
 	// router.Static("/images", "static/img")
 	// router.Static("/stylesheets", "static/css")
 
