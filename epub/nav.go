@@ -32,7 +32,7 @@ type NavigationPoint struct {
 	CharactorCountSelf  int    `json:"charactor_count"`
 	CharactorCountTotal int    `json:"total_charactor_count"`
 	Level               int    `json:"level"`
-	Url                 string `json:"-"`
+	Url                 string `json:"url"`
 	Tag                 string `json:"tag"` //like 1.1 or 1.2.1
 }
 
