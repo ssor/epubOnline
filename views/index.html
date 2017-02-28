@@ -109,7 +109,7 @@
       Vue.component('book',{
         delimiters : ['[[', ']]'],
         template: '\
-        <div class="book" @click="goRead()">\
+        <div class="book cancleHighlight" @click="goRead()">\
           <img class="avator" :src="meta.meta.coverage" alt="" />\
           <p class="title">[[ meta.meta.title ]]</p>\
           <span class="author">[[ meta.meta.creator ]]</span>\
@@ -180,7 +180,7 @@
         data (){
           return {
             pages : [],
-            pageTransfrom : 'pageTransfrom-next',
+            pageTransfrom : 'pageTransfrom',
             actp : 1
           }
         },
@@ -281,9 +281,9 @@
         delimiters : ['[[', ']]'],
         template :'\
         <div class="header">\
-          <mt-button icon="back" @click="goBack()"></mt-button>\
+          <mt-button class="cancleHighlight" icon="back" @click="goBack()"></mt-button>\
           <span class="rdHdtitle">[[ bookTitle ]]</span>\
-          <mt-button icon="more" @click="showCatalogue()"></mt-button>\
+          <mt-button class="cancleHighlight" icon="more" @click="showCatalogue()"></mt-button>\
         </div>\
         ',
         props : ['bookTitle'],
@@ -314,10 +314,10 @@
         template : '\
         <div class="catalogue">\
           <div class="header">\
-            <mt-button icon="back" @click="goBack()"></mt-button>\
+            <mt-button class="cancleHighlight" icon="back" @click="goBack()"></mt-button>\
           </div>\
           <div class="content">\
-            <p v-for="(val, index) in catalogue" :class="{active : isActive(index)}" @click="goCatalogue(index)">\
+            <p v-for="(val, index) in catalogue" :class="{cancleHighlight : true, active : isActive(index)}" @click="goCatalogue(index)">\
               <span>[[ val.tag ]]</span>\
               <span>[[ val.title ]]</span>\
             </p>\
@@ -350,9 +350,9 @@
         delimiters : ['[[', ']]'],
         template : '\
         <div id="reader">\
-          <div class="prevArea" @click="prev()"></div>\
-          <div class="middleArea" @click="showHeader()"></div>\
-          <div class="nextArea" @click="next()"></div>\
+          <div class="prevArea cancleHighlight" @click="prev()"></div>\
+          <div class="middleArea cancleHighlight" @click="showHeader()"></div>\
+          <div class="nextArea cancleHighlight" @click="next()"></div>\
           <transition name="slide-down">\
             <reader-header v-if="readerHeaderShow" :bookTitle="book.meta.title"></reader-header>\
           </transition>\
