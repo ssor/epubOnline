@@ -4,14 +4,10 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ssor/epubOnline/epub"
+	"github.com/ssor/epubOnline/api"
+	"github.com/ssor/epubOnline/controller"
 
 	"flag"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"path"
-	"strings"
 )
 
 var (
@@ -19,7 +15,6 @@ var (
 	listeningPort   = flag.String("port", "8092", "listeningPort")
 	book_dir        = "books_raw"
 	book_online_dir = "books"
-	books           = epub.EpubArray{}
 
 	app_dir = []string{"books"}
 
@@ -35,7 +30,7 @@ func main() {
 	}
 	os.RemoveAll(app_dir[0])
 	initAppDir(app_dir)
-	initBooks()
+	api.InitBooks(book_dir, book_online_dir, default_coverage)
 
 	router := gin.Default()
 	router.Static("/epub", book_dir)
@@ -47,96 +42,14 @@ func main() {
 
 	router.LoadHTMLGlob("views/*.html")
 
-	router.GET("/books", func(c *gin.Context) {
-		c.JSON(http.StatusOK, books)
-	})
+	router.GET("/books", api.Books)
+	router.GET("/book", api.Book)
 
-	router.GET("/book", func(c *gin.Context) {
-		id := c.Query("id")
-		c.JSON(http.StatusOK, books.Find(func(e *epub.Epub) bool {
-			return e.ID == id
-		}))
-	})
+	router.GET("/", controller.Index)
+	router.GET("/readBookIndex", controller.ReadBookIndex)
+	router.GET("/BookNavIndex", controller.BookNavIndex)
 
-	router.GET("/readBookIndex", func(c *gin.Context) {
-		id := c.Query("id")
-		c.HTML(http.StatusOK, "book_nav.html", gin.H{"ID": id})
-	})
-	router.GET("/BookNavIndex", func(c *gin.Context) {
-		id := c.Query("id")
-		c.HTML(http.StatusOK, "book_nav.html", gin.H{"ID": id})
-	})
-
-	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
-	})
 	router.Run(":" + *listeningPort)
-}
-
-func initBooks() {
-	files, err := getEpubFiles(book_dir)
-	if err != nil {
-		panic(err)
-	}
-	books, err = InitEpub(files)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func getEpubFiles(dir string) ([]string, error) {
-	files := []string{}
-
-	file_info_list, err := ioutil.ReadDir(dir)
-	if err != nil {
-		fmt.Println("[ERR] read dir err: ", err)
-		return files, err
-	}
-
-	for _, file_info := range file_info_list {
-		// spew.Dump(file_info)
-		name := file_info.Name()
-		if isEpubFormatFile(name) {
-			// fmt.Println(" - ", name)
-			files = append(files, path.Join(book_dir, name))
-		}
-	}
-	return files, nil
-}
-
-func isEpubFormatFile(file string) bool {
-	if strings.HasPrefix(file, ".") {
-		return false
-	}
-	return path.Ext(file) == ".epub"
-}
-
-func InitEpub(files []string) (epub.EpubArray, error) {
-	books := epub.EpubArray{}
-	for _, name := range files {
-		fmt.Println(" - ", name)
-		// epub_book, err := epub.LoadEpub(name, book_online_dir)
-		epub_book, err := epub.LoadEpub(name)
-		if err != nil {
-			fmt.Println("[ERR] load book ", name, " err: ", err)
-			return nil, err
-		}
-		epub_book.Url = path.Join("epub", path.Base(name))
-		err = epub.MoveEpub(book_online_dir, epub_book)
-		if err != nil {
-			fmt.Println("[ERR] move book ", name, " err: ", err)
-			return nil, err
-		}
-		epub_book.SetCoverageIfEmpty(default_coverage)
-		books = append(books, epub_book)
-	}
-
-	fmt.Println(len(books), " books loaded:")
-	for _, book := range books {
-		fmt.Println("-- ", book.Meta("title"))
-	}
-	return books, nil
-
 }
 
 //创建程序运行的必需基础目录
