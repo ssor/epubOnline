@@ -12,8 +12,11 @@ import (
 
 	"path/filepath"
 
+	"bytes"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ssor/epubgo/raw"
+	"github.com/ssor/html2text"
 )
 
 var ()
@@ -83,10 +86,14 @@ func NewEpub(src *raw.Epub, book_files_dir string) (*Epub, error) {
 		if err != nil {
 			return err
 		}
-		content, err := getHtmlContent(bs)
+		text, err := html2Text(bs)
 		if err != nil {
 			return err
 		}
+		nav.Text = text
+
+		content := getHtmlContent(bs)
+
 		nav.Url = path.Join(epub.FileDir, nav.Url)
 		nav.CharactorCountSelf = len(content)
 		nav.CharactorCountTotal = nav.CharactorCountSelf
@@ -236,11 +243,7 @@ func (ea EpubArray) Find(p func(*Epub) bool) *Epub {
 	return nil
 }
 
-func getHtmlContent(bs []byte) ([]rune, error) {
-	// b, err := ioutil.ReadAll(reader)
-	// if err != nil {
-	// 	return nil, err
-	// }
+func getHtmlContent(bs []byte) []rune {
 	src := string(bs)
 	//将HTML标签全转换成小写
 	re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
@@ -271,5 +274,13 @@ func getHtmlContent(bs []byte) ([]rune, error) {
 	src = strings.TrimSpace(src)
 	src_rune := []rune(src)
 
-	return src_rune, nil
+	return src_rune
+}
+
+func html2Text(bs []byte) (string, error) {
+	text, err := html2text.FromReader(bytes.NewReader(bs))
+	if err != nil {
+		return "", err
+	}
+	return text, nil
 }

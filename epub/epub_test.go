@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"strings"
 
+	"io/ioutil"
+	"path"
+
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -23,6 +26,25 @@ var (
 		bookPath_gcdxy, bookPath_zrddxcxyj,
 	}
 )
+
+func TestHtml2Text(t *testing.T) {
+	html_files := []string{
+		"html2text.html",
+	}
+
+	for _, html_file := range html_files {
+		bs, err := ioutil.ReadFile(path.Join(destPath, html_file))
+		if err != nil {
+			t.Fatal("ReadFile  err: ", err)
+		}
+		text, err := html2Text(bs)
+		if err != nil {
+			t.Fatal("html2Text  err: ", err)
+		}
+		fmt.Println(" ******", html_file, " ******")
+		fmt.Println(text)
+	}
+}
 
 func TestEpub(t *testing.T) {
 	for _, book_path := range books_path {

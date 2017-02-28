@@ -34,6 +34,7 @@ type NavigationPoint struct {
 	Level               int    `json:"level"`
 	Url                 string `json:"url"`
 	Tag                 string `json:"tag"` //like 1.1 or 1.2.1
+	Text                string `json:"text"`
 }
 
 type NavigationPointArray []*NavigationPoint
