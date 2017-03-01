@@ -1,0 +1,57 @@
+.cancleHighlight{-webkit-tap-highlight-color:rgba(255,0,0,0);}
+
+.slide-enter-active{transition: all .5s ease;opacity: 1;}
+.slide-leave-active{transition: all .5s ease;opacity: 0;}
+.slide-enter, .slide-leave-active{transform: translateX(80%);opacity: 0;}
+
+.slide-down-enter-active{transition: all .5s ease;opacity: 1;}
+.slide-down-leave-active{transition: all .5s ease;opacity: 0;}
+.slide-down-enter, .slide-down-leave-active{transform: translateY(-50px);opacity: 0;}
+
+.slide-up-enter-active{transition: all .5s ease;opacity: 1;}
+.slide-up-leave-active{transition: all .5s ease;opacity: 0;}
+.slide-up-enter, .slide-up-leave-active{transform: translateY(50px);opacity: 0;}
+
+.pageTransfrom-leave-active{opacity: 1;}
+.pageTransfrom-enter{opacity: 1;}
+
+.pageTransfrom-next-leave-active{transform: translateX(-100%);opacity: 1;}
+.pageTransfrom-next-enter{opacity: 1;}
+
+.pageTransfrom-prev-leave-active{transform: translateX(100%);opacity: 1;}
+.pageTransfrom-prev-enter{opacity: 1;}
+
+#app{position: relative;}
+#book_list{position: absolute;top: 0;left: 0;width: 100%;height: 100%;background: #cfcfcf;overflow-y: scroll;}
+#book_list .book{width: 100%;height: 160px;position: relative;background: #fff;margin-bottom: 10px;}
+#book_list .book .avator{height: 140px;width: 100px;position: absolute;top: 10px;left: 10px;}
+#book_list .book .title{width: 220px;position: absolute;top: 20px;left: 130px;font-size: 16px;}
+#book_list .book .author{position: absolute;bottom: 20px;left: 130px;font-size: 14px;}
+#reader{width: 100%;height: 100%;background: #AA9B83;position: absolute;overflow: hidden;}
+#reader > .prevArea{width: 50%;height: 100%;position: absolute;z-index: 666;top: 0;left: 0;}
+#reader > .nextArea{width: 50%;height: 100%;position: absolute;z-index: 666;top: 0;right: 0;}
+#reader > .middleArea{position: absolute;z-index: 777;width: 110px;height: 400px;top: 50%;left: 50%;margin: -200px 0 0 -55px;}
+#reader > .header{position: fixed;width: 100%;height: 50px;background: rgba(116, 113, 114, 0.8);z-index: 888;}
+#reader > .header button{height: 50px;background: transparent;border: none;box-shadow:none;color: #fff;position: absolute;}
+#reader > .header button:nth-of-type(1){top: 0;left: 5px;}
+#reader > .header button:nth-of-type(2){top: 0;right: 5px;}
+#reader > .header .rdHdtitle{display: block;width: 200px;margin: 0 auto;line-height: 50px;text-align: center;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+#reader .catalogue{width: 100%;height: 100%;background: #fff;position: absolute;top: 0;left: 0;z-index: 999;}
+#reader #chapter{box-sizing: border-box;width: 100%;height: 100%;padding: 5px;position: relative;}
+#reader #chapter > span{display: block;width: 100%;height: 100%;word-break: break-all;word-wrap: break-word;}
+/*#reader #chapter iframe{width: 100%;height: 100%;overflow-y: auto;overflow-x: hidden;}*/
+#reader #chapter .bookPage{opacity: 1;box-sizing: border-box;width: 100%;height: 100%;background: #AA9B83;padding: 5px;position: absolute;top: 0;left: 0;transition: all .6s ease-out;}
+#reader #chapter .bookPage .pageCon{width: 100%;height: 96%;overflow: hidden;}
+#reader #chapter .bookPage .pageCon .pagetitle{font-weight: bold;border-bottom: 1px solid #4b4a4b;}
+#reader #chapter .bookPage .pageFooter{width: 100%;height: 30px;position: relative;}
+#reader #chapter .bookPage .pageFooter span{display: block;width: 70px;;height: 20px;text-align: right;position: absolute;right: 20px;bottom: 50%;margin-bottom: -10px;}
+/*#reader #chapter .bookPage .pageItem{position: absolute;top: 0;left: 0;transition: all 1s;}*/
+#reader .catalogue .header{position: fixed;width: 100%;height: 50px;background: rgba(116, 113, 114, 1);z-index: 888;}
+#reader .catalogue .header button{height: 50px;background: transparent;border: none;box-shadow:none;color: #fff;position: absolute;top: 0;left: 5px;}
+#reader .catalogue .content{box-sizing: border-box;width: 100%;height: 100%;padding: 55px 5px 5px 5px;overflow-y: scroll;}
+#reader .catalogue .content p{padding: 10px 0;overflow: hidden;border-bottom: 1px solid #d1d1d1;}
+#reader .catalogue .content .active{color: #eea53a;}
+#reader .catalogue .content p span{float: left;height: 100%;}
+#reader .catalogue .content p span:nth-of-type(1){width: 15%;text-align: right;padding-top: 4px;margin-right: 7px;}
+#reader .catalogue .content p span:nth-of-type(2){width: 80%;}
+#reader .tabBar{position: fixed;bottom: 0;width: 100%;height: 50px;background: rgba(116, 113, 114, 0.8);z-index: 888;}

@@ -1,66 +1,489 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>图书列表</title>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/css/theme.css" rel="stylesheet" type="text/css" />
-    <style type="text/css">
-        .book {
-            border-bottom: 1px solid;
-            padding-bottom: 10px;
-            border-left: 1px solid rgba(100, 100, 100, 0.1);
-        }
-    </style>
-    <script src="/js/jquery.js" type="text/javascript"></script>
-    <script src="/js/lodash.min.js" type="text/javascript"></script>
-    <script src="/js/bootstrap.min.js"></script>
-    <script src="/js/tools.js" type="text/javascript"></script>
-    <script type="text/javascript">
-        $(function() {
-            $.ajax({
-                url: '/books',
-                type: 'GET',
-                success: function(data, status) {
-                    console.log(status)
-                    console.log(data)
-                    var book_list = $("#book_list")
-
-                    _.each(data, function(book) {
-                        var meta = book.meta
-                        var img =
-                            '<div class="col-md-4 book">' +
-                            '   <div style="text-align: center;">' +
-                            '       <img src="' + meta.coverage + '" style="max-height: 200px;" />' +
-                            '   </div>' +
-                            '   <div style="text-align: center;">' +
-                            '       <p style="margin-top: 10px; font-size: 18px;">' + meta.title + '</p>' +
-                            '       <button type="button" class="btn btn-success" id="btn_' + book.id + '" >开始阅读</button>' +
-                            '   </div>' +
-                            '</div>';
-
-                        book_list.append(img)
-                        $("#btn_" + book.id).click(function() {
-                            // alert(book.id)
-                            window.open("/BookNavIndex?id=" + book.id)
-                        })
-                    })
-                }
-            });
-
-            $("#btn_1").click(function() {
-                alert("btn1")
-            })
-
-        })
-    </script>
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+    <link rel="stylesheet" href="/css/vue.ui.css">
+    <link rel="stylesheet" href="/css/epub.css">
+    <link rel="stylesheet" href="/css/reset.css">
 </head>
-
-<body style="margin-right:5px;">
-    <div class="row" id="book_list" style="margin-top: 40px;">
+<body>
+    <div id="app" class="wrap">
+      <book-list v-if="bookListState" :books = "books"></book-list>
+      <transition :name="transitionName">
+        <reader v-if="ifshow" :book="books[bookNum]"></reader>
+      </transition>
     </div>
-</body>
+    <script src="/js/auto.js" charset="utf-8"></script>
+    <script src="/js/vue.js" charset="utf-8"></script>
+    <script src="/js/vuex.min.js" charset="utf-8"></script>
+    <script src="/js/vue.ui.js" charset="utf-8"></script>
+    <script src="/js/vue-tap.js" charset="utf-8"></script>
+    <script src="/js/axios.min.js" charset="utf-8"></script>
 
+    <script src="/js/book_json.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      const booksList = {
+        state: {
+          books : [],
+          show : false,
+          numBook : 0,
+          bookListState : true
+        },
+        mutations : {
+          updateBooks (state, newData){
+            state.books = newData
+          },
+          changeShow (state, newData){
+            state.show = newData
+          },
+          showNumBook (state, newData){
+            state.numBook = newData
+          },
+          changeBookListState (state, newData){
+            state.bookListState = newData
+          }
+        },
+        actions : {
+          changeBookListState (context, newData){
+            setTimeout(()=>{
+              context.commit('changeBookListState', newData)
+            },1000)
+          }
+        }
+      }
+      const reader = {
+        state: {
+          ifClick : true,
+          cpts : 0,
+          catalogueState : false,
+          readerHeaderState : false,
+          activePage : 1,
+          totalPages : 1,
+          activePageCopy : 1
+        },
+        mutations : {
+          changeIfClick (state, newData){
+            state.ifClick = newData
+          },
+          changeCatalogueState (state, newData){
+            state.catalogueState = newData
+          },
+          changeCpts (state, newData){
+            state.cpts = newData
+          },
+          changeReaderHeaderState (state, newData){
+            if(newData == null){
+              state.readerHeaderState = !state.readerHeaderState
+            }else{
+              state.readerHeaderState = newData
+            }
+          },
+          changeActivePage (state, newData){
+            if(newData == 0){
+              state.activePage = 1
+            }else{
+              state.activePage += newData
+            }
+          },
+          changeTotalPages (state, newData){
+            state.totalPages = newData
+          },
+          changeActivePageCopy (state, newData){
+            if(newData == 0){
+              state.activePageCopy = 1
+            }else{
+              state.activePageCopy += newData
+            }
+          }
+        },
+        actions : {
+          changeActivePageCopy (context, newData){
+            setTimeout(()=>{
+              context.commit('changeActivePageCopy', newData)
+            },200)
+          }
+        }
+      }
+      const store = new Vuex.Store({
+        modules : {
+          booksL : booksList,
+          reader : reader
+        }
+      })
+
+      axios.get('/books').then(res => {
+        console.log(res.data)
+        let ne = res.data
+        for(let i = 0;i < 2;i++){
+          ne.push(...res.data)
+        }
+        store.commit('updateBooks', ne)
+      })
+
+      // setTimeout(()=>{
+      //   store.commit('updateBooks', booksTest)
+      // },100)
+
+      Vue.component('book',{
+        delimiters : ['[[', ']]'],
+        template: '\
+        <div class="book cancleHighlight" @click="goRead()">\
+          <img class="avator" :src="meta.meta.coverage" alt="" />\
+          <p class="title">[[ meta.meta.title ]]</p>\
+          <span class="author">[[ meta.meta.creator ]]</span>\
+        </div>\
+        ',
+        props: ['meta','index','bookid'],
+        methods: {
+          goRead(){
+            store.commit('changeShow', true)
+            store.commit('showNumBook', this.index)
+          }
+        }
+      })
+
+      Vue.component('bookList', {
+        delimiters : ['[[', ']]'],
+        template : '\
+        <div id="book_list">\
+          <div is="book" v-for="(val, index) in books" :meta="books[index]" :index="index" :bookid="books[index][\'id\']"></div>\
+        </div>\
+        ',
+        props : ['books']
+      })
+
+      Vue.component('bookPage', {
+        delimiters : ['[[', ']]'],
+        template : '\
+        <div class="bookPage" :id="index" :style="{zIndex : ratio}">\
+          <div class="pageCon" style="font-size: 18px;">\
+            <p v-if="shwoTitle(actpage)" class="pagetitle">[[ title ]]</p>\
+            <p v-for="p in page" style="word-break:break-all;word-wrap: break-word;">\
+              [[ p ]]\
+            </p>\
+          </div>\
+          <div class="pageFooter">\
+            <span>[[ ofPages ]]</span>\
+          </div>\
+        </div>\
+        ',
+        props : ['page','index','total','active','title'],
+        computed : {
+          ratio (){
+            if(this.index == this.active + 1 || (this.active-1 > 0 && this.index == this.active - 1)){
+              return 100
+            }
+            return 110
+          },
+          ofPages (){
+            return this.index+'/'+this.total
+          },
+          actpage (){
+            return store.state.reader.activePage
+          }
+        },
+        methods : {
+          shwoTitle (i){
+            if(i == 1){
+              return true
+            }
+            return false
+          }
+        }
+      })
+
+      Vue.component('bookChapter', {
+        delimiters : ['[[', ']]'],
+        template : '\
+        <div id="chapter">\
+          <transition-group :name="pageTransfrom">\
+            <div is="bookPage" v-for="(val, key) in pages" :key="key" :page="val" :index="key+1" :total="total" :active="indexCopy" :title="chapter.title" v-if="pageNumIfShow(key,index)"></div>\
+          </transition>\
+        </div>\
+        ',
+        data (){
+          return {
+            pages : [],
+            pageTransfrom : 'pageTransfrom',
+            actp : 1
+          }
+        },
+        props : ['chapter'],
+        computed : {
+          index (){
+            if(this.actp > store.state.reader.activePage){
+              this.pageTransfrom = 'pageTransfrom-prev'
+            }else if(this.actp < store.state.reader.activePage){
+              this.pageTransfrom = 'pageTransfrom-next'
+            }
+            this.actp = store.state.reader.activePage
+            return store.state.reader.activePage
+          },
+          total (){
+            return store.state.reader.totalPages
+          },
+          indexCopy (){
+            return store.state.reader.activePageCopy
+          }
+        },
+        methods : {
+          pageNumIfShow (k, i){
+            if(k == i-1){
+              return true
+            }
+            return false
+          },
+          paging (){
+            this.pages = []
+            const pW = document.documentElement.clientWidth - 10
+            const pH = Math.floor((document.documentElement.clientHeight - 10) * 0.96)
+            // console.log(pW+' '+pH)
+            const fontPH = Math.floor(pH / (18 + 7))
+            const fontPW = Math.floor(pW / (18 + 0))
+            const pTotals = fontPH * fontPW
+            const cTotals = this.chapter.text.length
+            // console.log(fontPH+' '+fontPW)
+            // console.log(pTotals)
+            // console.log(cTotals)
+            // console.log(cTotals/pTotals)
+            let pPart = []
+            let line = 0;
+            let oldAry = null
+            const pAry = this.chapter.text.split('\n')
+            for(let i = 0;i < pAry.length;i++){
+              if(pAry[i] == ""){
+                continue
+              }
+              let p = 0
+              let str = null
+              let ptitle = 0
+              if(i == 0){
+                ptitle = 1
+              }
+              if(oldAry != null){
+                str = oldAry
+                p = Math.ceil(oldAry.length / fontPW) + ptitle
+                i--
+              }else{
+                str = pAry[i]
+                p = Math.ceil(pAry[i].length / fontPW) + ptitle
+              }
+              if(line + p < fontPH){
+                line += p
+                pPart.push(str)
+                oldAry = null
+                if(i == pAry.length-1){
+                  this.pages.push(pPart)
+                }
+              }else if(line + p > fontPH){
+                let part1 = str.substring(0,(fontPH-line)*fontPW)
+                oldAry = str.substring((fontPH-line)*fontPW,pAry[i].length)
+                pPart.push(part1)
+                this.pages.push(pPart)
+                pPart = []
+                line = 0
+              }else if(line + p == fontPH){
+                pPart.push(str)
+                this.pages.push(pPart)
+                pPart = []
+                line = 0
+                oldAry = null
+              }
+            }
+          }
+        },
+        mounted (){
+          this.paging()
+          store.commit('changeTotalPages', this.pages.length)
+        },
+        watch : {
+          chapter (){
+            this.actp = 1
+            this.paging()
+            store.commit('changeTotalPages', this.pages.length)
+          }
+        }
+      })
+
+      Vue.component('readerHeader', {
+        delimiters : ['[[', ']]'],
+        template :'\
+        <div class="header">\
+          <mt-button class="cancleHighlight" icon="back" @click="goBack()"></mt-button>\
+          <span class="rdHdtitle">[[ bookTitle ]]</span>\
+          <mt-button class="cancleHighlight" icon="more" @click="showCatalogue()"></mt-button>\
+        </div>\
+        ',
+        props : ['bookTitle'],
+        methods : {
+          goBack (){
+            store.commit('changeShow', false)
+            store.commit('changeReaderHeaderState',false)
+            store.commit('changeCpts', 0)
+            store.commit('changeBookListState', true)
+          },
+          showCatalogue (){
+            store.commit('changeCatalogueState', true)
+            store.commit('changeReaderHeaderState',false)
+          }
+        }
+      })
+
+      Vue.component('tabBar', {
+        template : '\
+        <div class="tabBar">\
+        \
+        </div>\
+        '
+      })
+
+      Vue.component('catalogue', {
+        delimiters : ['[[', ']]'],
+        template : '\
+        <div class="catalogue">\
+          <div class="header">\
+            <mt-button class="cancleHighlight" icon="back" @click="goBack()"></mt-button>\
+          </div>\
+          <div class="content">\
+            <p v-for="(val, index) in catalogue" :class="{cancleHighlight : true, active : isActive(index)}" @click="goCatalogue(index)">\
+              <span>[[ val.tag ]]</span>\
+              <span>[[ val.title ]]</span>\
+            </p>\
+          </div>\
+        </div>\
+        ',
+        props : ['catalogue'],
+        methods : {
+          catalogueCombination (val){
+            return val.tag+' '+val.title
+          },
+          goCatalogue (index){
+            store.commit('changeCpts', index)
+            store.commit('changeCatalogueState', false)
+            store.commit('changeActivePage',0)
+          },
+          goBack (){
+            store.commit('changeCatalogueState', false)
+          },
+          isActive (i){
+            if(i == store.state.reader.cpts){
+              return true
+            }
+            return false
+          }
+        }
+      })
+
+      Vue.component('reader', {
+        delimiters : ['[[', ']]'],
+        template : '\
+        <div id="reader">\
+          <div class="prevArea cancleHighlight" @click="prev()"></div>\
+          <div class="middleArea cancleHighlight" @click="showHeader()"></div>\
+          <div class="nextArea cancleHighlight" @click="next()"></div>\
+          <transition name="slide-down">\
+            <reader-header v-if="readerHeaderShow" :bookTitle="book.meta.title"></reader-header>\
+          </transition>\
+          <bookChapter :chapter="book.navigations[numChapter]"></bookChapter>\
+          <transition name="slide-up">\
+            \
+          </transition>\
+          <transition name="slide">\
+            <catalogue v-if="catalogueShow" :catalogue="book.navigations"></catalogue>\
+          </transition>\
+        </div>\
+        ',
+        props : ['book'],
+        computed : {
+          numChapter (){
+            return store.state.reader.cpts
+          },
+          catalogueShow (){
+            return store.state.reader.catalogueState
+          },
+          readerHeaderShow (){
+            return store.state.reader.readerHeaderState
+          }
+        },
+        methods : {
+          showHeader (){
+            store.commit('changeReaderHeaderState',null)
+          },
+          prev (){
+            store.commit('changeReaderHeaderState', false)
+            if(!store.state.reader.ifClick){
+              return
+            }
+            if(store.state.reader.activePage == 1){
+              this.$toast({
+                message: '已经是第一页',
+                position: 'middle',
+                duration: 1000
+              });
+              // store.commit('changeCpts', store.state.reader.cpts-1)
+              // store.dispatch('changeActivePageCopy',0)
+              // store.commit('changeActivePage',0)
+              return
+            }
+            store.commit('changeActivePage',-1)
+            store.dispatch('changeActivePageCopy',-1)
+            store.commit('changeIfClick',false)
+            setTimeout(()=>{
+              store.commit('changeIfClick',true)
+            },800)
+          },
+          next (){
+            store.commit('changeReaderHeaderState', false)
+            if(!store.state.reader.ifClick){
+              return
+            }
+            if(store.state.reader.activePage == store.state.reader.totalPages){
+              this.$toast({
+                message: '已经是最后一页',
+                position: 'middle',
+                duration: 1000
+              })
+              // store.commit('changeCpts', store.state.reader.cpts+1)
+              // store.dispatch('changeActivePageCopy',0)
+              // store.commit('changeActivePage',0)
+              return
+            }
+            store.commit('changeActivePage',1)
+            store.dispatch('changeActivePageCopy',1)
+            store.commit('changeIfClick',false)
+            setTimeout(()=>{
+              store.commit('changeIfClick',true)
+            },800)
+          }
+        },
+        mounted (){
+          store.dispatch('changeBookListState', false)
+        }
+      })
+
+      new Vue({
+        delimiters : ['[[', ']]'],
+        el : '#app',
+        data : {
+          transitionName: 'slide',
+        },
+        computed : {
+          books (){
+            return store.state.booksL.books
+          },
+          ifshow (){
+            return store.state.booksL.show
+          },
+          bookNum (){
+            return store.state.booksL.numBook
+          },
+          bookListState (){
+            return store.state.booksL.bookListState
+          }
+        },
+      })
+    </script>
+</body>
 </html>
