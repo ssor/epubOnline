@@ -10,19 +10,16 @@
 </head>
 <body>
     <div id="app" class="wrap">
-      <!-- <transition name="fade" mode="out-in"> -->
-        <book-list v-if="bookListState" :books = "books"></book-list>
-      <!-- </transition> -->
+      <book-list v-if="bookListState" :books = "books"></book-list>
       <transition :name="transitionName">
-        <!-- <router-view :books = "books"></router-view> -->
         <reader v-if="ifshow" :book="books[bookNum]"></reader>
       </transition>
     </div>
     <script src="/js/auto.js" charset="utf-8"></script>
     <script src="/js/vue.js" charset="utf-8"></script>
     <script src="/js/vuex.min.js" charset="utf-8"></script>
-    <!-- <script src="/js/vue-router.min.js" charset="utf-8"></script>/ -->
     <script src="/js/vue.ui.js" charset="utf-8"></script>
+    <script src="/js/vue-tap.js" charset="utf-8"></script>
     <script src="/js/axios.min.js" charset="utf-8"></script>
 
     <script src="/js/book_json.js" charset="utf-8"></script>
@@ -58,13 +55,18 @@
       }
       const reader = {
         state: {
+          ifClick : true,
           cpts : 0,
           catalogueState : false,
           readerHeaderState : false,
           activePage : 1,
-          totalPages : 1
+          totalPages : 1,
+          activePageCopy : 1
         },
         mutations : {
+          changeIfClick (state, newData){
+            state.ifClick = newData
+          },
           changeCatalogueState (state, newData){
             state.catalogueState = newData
           },
@@ -87,6 +89,20 @@
           },
           changeTotalPages (state, newData){
             state.totalPages = newData
+          },
+          changeActivePageCopy (state, newData){
+            if(newData == 0){
+              state.activePageCopy = 1
+            }else{
+              state.activePageCopy += newData
+            }
+          }
+        },
+        actions : {
+          changeActivePageCopy (context, newData){
+            setTimeout(()=>{
+              context.commit('changeActivePageCopy', newData)
+            },200)
           }
         }
       }
@@ -99,7 +115,11 @@
 
       axios.get('/books').then(res => {
         console.log(res.data)
-        store.commit('updateBooks', res.data)
+        let ne = res.data
+        for(let i = 0;i < 2;i++){
+          ne.push(...res.data)
+        }
+        store.commit('updateBooks', ne)
       })
 
       // setTimeout(()=>{
@@ -137,7 +157,7 @@
       Vue.component('bookPage', {
         delimiters : ['[[', ']]'],
         template : '\
-        <div class="bookPage" :id="index">\
+        <div class="bookPage" :id="index" :style="{zIndex : ratio}">\
           <div class="pageCon" style="font-size: 18px;">\
             <p v-if="shwoTitle(actpage)" class="pagetitle">[[ title ]]</p>\
             <p v-for="p in page" style="word-break:break-all;word-wrap: break-word;">\
@@ -151,8 +171,14 @@
         ',
         props : ['page','index','total','active','title'],
         computed : {
+          ratio (){
+            if(this.index == this.active + 1 || (this.active-1 > 0 && this.index == this.active - 1)){
+              return 100
+            }
+            return 110
+          },
           ofPages (){
-            return this.active+'/'+this.total
+            return this.index+'/'+this.total
           },
           actpage (){
             return store.state.reader.activePage
@@ -173,7 +199,7 @@
         template : '\
         <div id="chapter">\
           <transition-group :name="pageTransfrom">\
-            <div is="bookPage" v-for="(val, key) in pages" :key="key" :page="val" :index="key+1" :total="total" :active="index" :title="chapter.title" v-if="pageNumIfShow(key, index)"></div>\
+            <div is="bookPage" v-for="(val, key) in pages" :key="key" :page="val" :index="key+1" :total="total" :active="indexCopy" :title="chapter.title" v-if="pageNumIfShow(key,index)"></div>\
           </transition>\
         </div>\
         ',
@@ -197,6 +223,9 @@
           },
           total (){
             return store.state.reader.totalPages
+          },
+          indexCopy (){
+            return store.state.reader.activePageCopy
           }
         },
         methods : {
@@ -271,6 +300,7 @@
         },
         watch : {
           chapter (){
+            this.actp = 1
             this.paging()
             store.commit('changeTotalPages', this.pages.length)
           }
@@ -383,27 +413,49 @@
           },
           prev (){
             store.commit('changeReaderHeaderState', false)
+            if(!store.state.reader.ifClick){
+              return
+            }
             if(store.state.reader.activePage == 1){
               this.$toast({
                 message: '已经是第一页',
                 position: 'middle',
                 duration: 1000
               });
+              // store.commit('changeCpts', store.state.reader.cpts-1)
+              // store.dispatch('changeActivePageCopy',0)
+              // store.commit('changeActivePage',0)
               return
             }
             store.commit('changeActivePage',-1)
+            store.dispatch('changeActivePageCopy',-1)
+            store.commit('changeIfClick',false)
+            setTimeout(()=>{
+              store.commit('changeIfClick',true)
+            },800)
           },
           next (){
             store.commit('changeReaderHeaderState', false)
+            if(!store.state.reader.ifClick){
+              return
+            }
             if(store.state.reader.activePage == store.state.reader.totalPages){
               this.$toast({
                 message: '已经是最后一页',
                 position: 'middle',
                 duration: 1000
-              });
+              })
+              // store.commit('changeCpts', store.state.reader.cpts+1)
+              // store.dispatch('changeActivePageCopy',0)
+              // store.commit('changeActivePage',0)
               return
             }
             store.commit('changeActivePage',1)
+            store.dispatch('changeActivePageCopy',1)
+            store.commit('changeIfClick',false)
+            setTimeout(()=>{
+              store.commit('changeIfClick',true)
+            },800)
           }
         },
         mounted (){

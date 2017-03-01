@@ -12,14 +12,14 @@
 .slide-up-leave-active{transition: all .5s ease;opacity: 0;}
 .slide-up-enter, .slide-up-leave-active{transform: translateY(50px);opacity: 0;}
 
-.pageTransfrom-leave-active{opacity: 0;}
-.pageTransfrom-enter{opacity: 0;}
+.pageTransfrom-leave-active{opacity: 1;}
+.pageTransfrom-enter{opacity: 1;}
 
-.pageTransfrom-next-leave-active{transform: translateX(-100%);}
-.pageTransfrom-next-enter{transform: translateX(100%);}
+.pageTransfrom-next-leave-active{transform: translateX(-100%);opacity: 1;}
+.pageTransfrom-next-enter{opacity: 1;}
 
-.pageTransfrom-prev-leave-active{transform: translateX(100%);}
-.pageTransfrom-prev-enter{transform: translateX(-100%);}
+.pageTransfrom-prev-leave-active{transform: translateX(100%);opacity: 1;}
+.pageTransfrom-prev-enter{opacity: 1;}
 
 #app{position: relative;}
 #book_list{position: absolute;top: 0;left: 0;width: 100%;height: 100%;background: #cfcfcf;overflow-y: scroll;}
@@ -37,10 +37,10 @@
 #reader > .header button:nth-of-type(2){top: 0;right: 5px;}
 #reader > .header .rdHdtitle{display: block;width: 200px;margin: 0 auto;line-height: 50px;text-align: center;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
 #reader .catalogue{width: 100%;height: 100%;background: #fff;position: absolute;top: 0;left: 0;z-index: 999;}
-#reader #chapter{box-sizing: border-box;width: 100%;height: 100%;padding: 5px;}
+#reader #chapter{box-sizing: border-box;width: 100%;height: 100%;padding: 5px;position: relative;}
 #reader #chapter > span{display: block;width: 100%;height: 100%;word-break: break-all;word-wrap: break-word;}
 /*#reader #chapter iframe{width: 100%;height: 100%;overflow-y: auto;overflow-x: hidden;}*/
-#reader #chapter .bookPage{box-sizing: border-box;width: 100%;height: 100%;padding: 5px;position: absolute;top: 0;left: 0;transition: all .6s ease-out;}
+#reader #chapter .bookPage{opacity: 1;box-sizing: border-box;width: 100%;height: 100%;background: #AA9B83;padding: 5px;position: absolute;top: 0;left: 0;transition: all .6s ease-out;}
 #reader #chapter .bookPage .pageCon{width: 100%;height: 96%;overflow: hidden;}
 #reader #chapter .bookPage .pageCon .pagetitle{font-weight: bold;border-bottom: 1px solid #4b4a4b;}
 #reader #chapter .bookPage .pageFooter{width: 100%;height: 30px;position: relative;}
