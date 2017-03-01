@@ -12,6 +12,7 @@ import (
 	"path"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ssor/epubOnline/bom"
 )
 
 const (
@@ -28,21 +29,54 @@ var (
 )
 
 func TestHtml2Text(t *testing.T) {
-	html_files := []string{
-		"html2text.html",
+	html_files := []struct {
+		file                      string
+		keyword_should_not_exists string
+		keyword_should_exists     string
+	}{
+		{
+
+			"html2text2.html",
+			"学习之道:美国公认学习第一书NOBOM",
+			"",
+		},
+		{
+
+			"html2text.html",
+			"学习之道:美国公认学习第一书title",
+			"次世界冠军赛上，我几近疯狂",
+		},
+		{
+			"chapter_00008.xhtml",
+			"1892年波兰文版序言title",
+			"种新的波兰文本已成为必要",
+		},
+		{
+			"chapter_9.xhtml",
+			"1892年波兰文版序言title",
+			"",
+		},
 	}
 
 	for _, html_file := range html_files {
-		bs, err := ioutil.ReadFile(path.Join(destPath, html_file))
+		bs, err := ioutil.ReadFile(path.Join(destPath, html_file.file))
 		if err != nil {
 			t.Fatal("ReadFile  err: ", err)
 		}
+		bs = bom.CleanBom(bs)
+		// fmt.Println(string(bs))
 		text, err := html2Text(bs)
 		if err != nil {
 			t.Fatal("html2Text  err: ", err)
 		}
-		fmt.Println(" ******", html_file, " ******")
-		fmt.Println(text)
+		// t.Log(" ******", html_file, " text: ******")
+		// t.Log(text)
+		if strings.Contains(text, html_file.keyword_should_exists) == false {
+			t.Fatal("keyword ", html_file.keyword_should_exists, " should  exists in file ", html_file.file)
+		}
+		if strings.Contains(text, html_file.keyword_should_not_exists) == true {
+			t.Fatal("keyword ", html_file.keyword_should_not_exists, " should not exists in file ", html_file.file)
+		}
 	}
 }
 
@@ -98,4 +132,15 @@ func TestMapJson(t *testing.T) {
 
 	bs, _ := json.Marshal(obj)
 	spew.Dump(string(bs))
+}
+
+func TestSwitch(t *testing.T) {
+	loop := 1
+
+	switch loop {
+	default:
+		println("default")
+	case 1:
+		println("11111111")
+	}
 }
