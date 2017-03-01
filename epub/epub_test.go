@@ -12,7 +12,6 @@ import (
 	"path"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ssor/epubOnline/bom"
 )
 
 const (
@@ -36,25 +35,14 @@ func TestHtml2Text(t *testing.T) {
 	}{
 		{
 
-			"html2text2.html",
-			"学习之道:美国公认学习第一书NOBOM",
-			"",
-		},
-		{
-
-			"html2text.html",
+			"utf8.html",
 			"学习之道:美国公认学习第一书title",
 			"次世界冠军赛上，我几近疯狂",
 		},
 		{
-			"chapter_00008.xhtml",
+			"utf8_with_bom.xhtml",
 			"1892年波兰文版序言title",
 			"种新的波兰文本已成为必要",
-		},
-		{
-			"chapter_9.xhtml",
-			"1892年波兰文版序言title",
-			"",
 		},
 	}
 
@@ -63,8 +51,6 @@ func TestHtml2Text(t *testing.T) {
 		if err != nil {
 			t.Fatal("ReadFile  err: ", err)
 		}
-		bs = bom.CleanBom(bs)
-		// fmt.Println(string(bs))
 		text, err := html2Text(bs)
 		if err != nil {
 			t.Fatal("html2Text  err: ", err)

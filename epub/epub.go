@@ -15,7 +15,6 @@ import (
 	"bytes"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ssor/epubOnline/bom"
 	"github.com/ssor/epubgo/raw"
 	"github.com/ssor/html2text"
 )
@@ -87,7 +86,7 @@ func NewEpub(src *raw.Epub, book_files_dir string) (*Epub, error) {
 		if err != nil {
 			return err
 		}
-		bs = bom.CleanBom(bs)
+		// bs = bom.CleanBom(bs)
 		text, err := html2Text(bs)
 		if err != nil {
 			return err
