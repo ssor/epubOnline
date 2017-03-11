@@ -4,7 +4,7 @@ var tasks = [
     { src: "static", dest: "release/static", type: "file_or_dir" },
     { src: "views", dest: "release/views", type: "file_or_dir" },
     { src: "", dest: "release/views/index.html", type: "file_or_dir_ignore" },
-    { src: "GOOS=linux GOARCH=amd64 go build -o ./release/epubOnline_linux64 main.go", dest: "", type: "cmd" },
+    { src: "GOOS=linux GOARCH=amd64 go build -o ./release/epubonline_linux64 main.go", dest: "", type: "cmd" },
 ]
 
 const fs = require('fs-extra');
