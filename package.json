@@ -1,0 +1,27 @@
+{
+    "name": "epub_online",
+    "version": "1.0.0",
+    "description": "## API",
+    "main": "gulpfile.js",
+    "directories": {
+        "test": "test"
+    },
+    "dependencies": {
+        "ramda": "",
+        "fs-extra": ""
+    },
+    "devDependencies": {},
+    "scripts": {
+        "build": "node build.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@gitlab.com/xsb_hub/epub_online.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://gitlab.com/xsb_hub/epub_online/issues"
+    },
+    "homepage": "https://gitlab.com/xsb_hub/epub_online#README"
+}
