@@ -6,42 +6,43 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ssor/epubOnline/epub"
+	"github.com/ssor/epub_online/epub"
 )
 
 var (
-	books = epub.EpubArray{}
+	books = epub.Array{}
 )
 
-func InitBooks(epub_src_dir, dest_dir, default_coverage string) {
-	files, err := listEpubNames(epub_src_dir)
+// InitBooks check book list and extract content from zip
+func InitBooks(epubSrcDir, destDir, defaultCoverage string) {
+	files, err := listEpubNames(epubSrcDir)
 	if err != nil {
 		panic(err)
 	}
 
-	files_full_path := []string{}
+	filesFullPath := []string{}
 	for _, name := range files {
-		files_full_path = append(files_full_path, path.Join(epub_src_dir, name))
+		filesFullPath = append(filesFullPath, path.Join(epubSrcDir, name))
 	}
 
-	books, err = InitEpub(files_full_path, dest_dir, default_coverage)
+	books, err = InitEpub(filesFullPath, destDir, defaultCoverage)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func listEpubNames(epub_src_dir string) ([]string, error) {
+func listEpubNames(epubSrcDir string) ([]string, error) {
 	files := []string{}
 
-	file_info_list, err := ioutil.ReadDir(epub_src_dir)
+	fileInfoList, err := ioutil.ReadDir(epubSrcDir)
 	if err != nil {
 		fmt.Println("[ERR] read dir err: ", err)
 		return files, err
 	}
 
-	for _, file_info := range file_info_list {
-		// spew.Dump(file_info)
-		name := file_info.Name()
+	for _, fileInfo := range fileInfoList {
+		// spew.Dump(fileInfo)
+		name := fileInfo.Name()
 		if isEpubFormatFile(name) {
 			// fmt.Println(" - ", name)
 			// files = append(files, path.Join(epub_content_file_dir, name))
@@ -58,24 +59,25 @@ func isEpubFormatFile(file string) bool {
 	return path.Ext(file) == ".epub"
 }
 
-func InitEpub(files []string, dest_dir, default_coverage string) (epub.EpubArray, error) {
-	books := epub.EpubArray{}
+// InitEpub init an epub book, includes load it's info, move it's extracted files to dest dir
+func InitEpub(files []string, destDir, defaultCoverage string) (epub.Array, error) {
+	books := epub.Array{}
 	for _, name := range files {
 		fmt.Println(" - ", name)
 		// epub_book, err := epub.LoadEpub(name, book_online_dir)
-		epub_book, err := epub.LoadEpub(name)
+		epubBook, err := epub.LoadEpub(name)
 		if err != nil {
 			fmt.Println("[ERR] load book ", name, " err: ", err)
 			return nil, err
 		}
-		epub_book.Url = path.Join("epub", path.Base(name))
-		err = epub.MoveEpub(dest_dir, epub_book)
+		epubBook.URL = path.Join("epub", path.Base(name))
+		err = epub.MoveEpub(destDir, epubBook)
 		if err != nil {
 			fmt.Println("[ERR] move book ", name, " err: ", err)
 			return nil, err
 		}
-		epub_book.SetCoverageIfEmpty(default_coverage)
-		books = append(books, epub_book)
+		epubBook.SetCoverageIfEmpty(defaultCoverage)
+		books = append(books, epubBook)
 	}
 
 	fmt.Println(len(books), " books loaded:")

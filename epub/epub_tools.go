@@ -10,20 +10,20 @@ import (
 
 // MoveEpub move epub file to special dir, and relative url path will be reset also
 func MoveEpub(destPath string, epub *Epub) error {
-	dest_full_path := path.Join(destPath, epub.FileDir)
-	if isFileExist(dest_full_path) == true {
-		err := os.RemoveAll(dest_full_path)
+	destFullPath := path.Join(destPath, epub.FileDir)
+	if isFileExist(destFullPath) == true {
+		err := os.RemoveAll(destFullPath)
 		if err != nil {
 			return err
 		}
 	}
-	err := os.Rename(epub.FileDir, dest_full_path)
+	err := os.Rename(epub.FileDir, destFullPath)
 	if err != nil {
 		return err
 	}
 
 	err = epub.Navigations.Each(func(nav *NavigationPoint) error {
-		nav.Url = path.Join(destPath, nav.Url)
+		nav.URL = path.Join(destPath, nav.URL)
 		return nil
 	})
 	if err != nil {

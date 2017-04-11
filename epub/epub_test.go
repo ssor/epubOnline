@@ -15,23 +15,23 @@ import (
 )
 
 const (
-	bookPath_gcdxy     = "../books_raw/gcdxy.epub"
-	bookPath_zrddxcxyj = "../books_raw/zrddxcxyj.epub"
+	bookPathGCDXY     = "../books_raw/gcdxy.epub"
+	bookPathZRDDXCXYJ = "../books_raw/zrddxcxyj.epub"
 
 	destPath = "testdata"
 )
 
 var (
-	books_path = []string{
-		bookPath_gcdxy, bookPath_zrddxcxyj,
+	booksPath = []string{
+		bookPathGCDXY, bookPathZRDDXCXYJ,
 	}
 )
 
 func TestHtml2Text(t *testing.T) {
-	html_files := []struct {
-		file                      string
-		keyword_should_not_exists string
-		keyword_should_exists     string
+	htmlFiles := []struct {
+		file                   string
+		keywordShouldNotExists string
+		keywordShouldExists    string
 	}{
 		{
 
@@ -46,8 +46,8 @@ func TestHtml2Text(t *testing.T) {
 		},
 	}
 
-	for _, html_file := range html_files {
-		bs, err := ioutil.ReadFile(path.Join(destPath, html_file.file))
+	for _, htmlFile := range htmlFiles {
+		bs, err := ioutil.ReadFile(path.Join(destPath, htmlFile.file))
 		if err != nil {
 			t.Fatal("ReadFile  err: ", err)
 		}
@@ -55,20 +55,20 @@ func TestHtml2Text(t *testing.T) {
 		if err != nil {
 			t.Fatal("html2Text  err: ", err)
 		}
-		// t.Log(" ******", html_file, " text: ******")
+		// t.Log(" ******", htmlFile, " text: ******")
 		// t.Log(text)
-		if strings.Contains(text, html_file.keyword_should_exists) == false {
-			t.Fatal("keyword ", html_file.keyword_should_exists, " should  exists in file ", html_file.file)
+		if strings.Contains(text, htmlFile.keywordShouldExists) == false {
+			t.Fatal("keyword ", htmlFile.keywordShouldExists, " should  exists in file ", htmlFile.file)
 		}
-		if strings.Contains(text, html_file.keyword_should_not_exists) == true {
-			t.Fatal("keyword ", html_file.keyword_should_not_exists, " should not exists in file ", html_file.file)
+		if strings.Contains(text, htmlFile.keywordShouldNotExists) == true {
+			t.Fatal("keyword ", htmlFile.keywordShouldNotExists, " should not exists in file ", htmlFile.file)
 		}
 	}
 }
 
 func TestEpub(t *testing.T) {
-	for _, book_path := range books_path {
-		openBook(book_path, t)
+	for _, bookPath := range booksPath {
+		openBook(bookPath, t)
 	}
 }
 
@@ -85,10 +85,10 @@ func openBook(bookPath string, t *testing.T) {
 	fmt.Println("*** ", epub.Meta("title"), " 总字数: ", epub.CharactorCount)
 	fmt.Printf("%-8s  %-6s %-6s %-15s %s\n", "", "本页字数", "章节总字数", "文件", "目录名称")
 	for _, nav := range epub.Navigations {
-		fmt.Printf("%-8s  %-10d %-10d %10s %s\n", nav.Tag, nav.CharactorCountSelf, nav.CharactorCountTotal, nav.Url, strings.Repeat("-", nav.Level*4)+nav.Title)
+		fmt.Printf("%-8s  %-10d %-10d %10s %s\n", nav.Tag, nav.CharactorCountSelf, nav.CharactorCountTotal, nav.URL, strings.Repeat("-", nav.Level*4)+nav.Title)
 
-		if isFileExist(nav.Url) == false {
-			t.Fatal(nav.Url, " should exits")
+		if isFileExist(nav.URL) == false {
+			t.Fatal(nav.URL, " should exits")
 		}
 	}
 	if len(epub.MetaInfo["coverage"]) > 0 {

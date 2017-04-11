@@ -4,21 +4,21 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ssor/epubOnline/api"
-	"github.com/ssor/epubOnline/controller"
+	"github.com/ssor/epub_online/api"
+	"github.com/ssor/epub_online/controller"
 
 	"flag"
 )
 
 var (
-	configFile      = flag.String("config", "conf/config.json", "config file for system")
-	listeningPort   = flag.String("port", "8092", "listeningPort")
-	book_dir        = "books_raw"
-	book_online_dir = "books"
+	configFile    = flag.String("config", "conf/config.json", "config file for system")
+	listeningPort = flag.String("port", "8092", "listeningPort")
+	bookDir       = "books_raw"
+	bookOnlineDir = "books"
 
-	app_dir = []string{"books"}
+	appDir = []string{"books"}
 
-	default_coverage = "/images/bb.png"
+	defaultCoverage = "/images/bb.png"
 )
 
 func main() {
@@ -28,13 +28,13 @@ func main() {
 		flag.PrintDefaults()
 		return
 	}
-	os.RemoveAll(app_dir[0])
-	initAppDir(app_dir)
-	api.InitBooks(book_dir, book_online_dir, default_coverage)
+	os.RemoveAll(appDir[0])
+	initAppDir(appDir)
+	api.InitBooks(bookDir, bookOnlineDir, defaultCoverage)
 
 	router := gin.Default()
-	router.Static("/epub", book_dir)
-	router.Static("/"+book_online_dir, book_online_dir)
+	router.Static("/epub", bookDir)
+	router.Static("/"+bookOnlineDir, bookOnlineDir)
 	router.Static("/js", "static/js")
 	router.Static("/images", "static/img")
 	router.Static("/css", "static/css")

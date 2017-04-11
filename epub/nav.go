@@ -11,11 +11,11 @@ func NewNavigationPoint(src *raw.NavPoint, level, IndexInList int, tagPre string
 	point := &NavigationPoint{
 		Title: src.Title(),
 		Level: level,
-		Url:   src.URL(),
+		URL:   src.URL(),
 	}
 
-	if sharp_index := strings.Index(src.URL(), "#"); sharp_index > 0 {
-		point.Url = src.URL()[:sharp_index]
+	if sharpIndex := strings.Index(src.URL(), "#"); sharpIndex > 0 {
+		point.URL = src.URL()[:sharpIndex]
 	}
 
 	if len(tagPre) <= 0 {
@@ -32,7 +32,7 @@ type NavigationPoint struct {
 	CharactorCountSelf  int    `json:"charactor_count"`
 	CharactorCountTotal int    `json:"total_charactor_count"`
 	Level               int    `json:"level"`
-	Url                 string `json:"url"`
+	URL                 string `json:"url"`
 	Tag                 string `json:"tag"` //like 1.1 or 1.2.1
 	Text                string `json:"text"`
 }

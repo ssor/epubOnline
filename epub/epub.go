@@ -1,27 +1,25 @@
 package epub
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
-	"fmt"
-
-	"os"
-	"path"
-
-	"path/filepath"
-
-	"bytes"
-
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ssor/epubgo/raw"
 	"github.com/ssor/html2text"
 )
 
-var ()
+var (
+	metaList = []string{"title", "language", "identifier", "creator", "subject", "description", "publisher", "contributor", "date", "type", "format", "source", "relation", "coverage", "rights"}
+)
 
-// func LoadEpub(bookPath string, extractDir string) (*Epub, error) {
+// LoadEpub will read epub file, and copy it's content to it's dir(md5), and returns epub's info
 func LoadEpub(bookPath string) (*Epub, error) {
 	zipReader, err := raw.NewEpub(bookPath)
 	if err != nil {
@@ -29,17 +27,14 @@ func LoadEpub(bookPath string) (*Epub, error) {
 	}
 	defer zipReader.Close()
 
-	epub_files_dir := ""
-	// if len(extractDir) > 0 {
+	epubFilesDir := ""
 	md5, err := caculateMD5Value(bookPath)
 	if err != nil {
 		return nil, err
 	}
-	epub_files_dir = md5
-	// }
+	epubFilesDir = md5
 
-	// epub, err := NewEpub(zipReader, epub_files_dir, extractDir)
-	epub, err := NewEpub(zipReader, epub_files_dir)
+	epub, err := NewEpub(zipReader, epubFilesDir)
 	if err != nil {
 		return nil, err
 	}
@@ -47,62 +42,51 @@ func LoadEpub(bookPath string) (*Epub, error) {
 	return epub, nil
 }
 
-// func NewEpub(src *raw.Epub, book_files_dir, extract_dir string) (*Epub, error) {
-func NewEpub(src *raw.Epub, book_files_dir string) (*Epub, error) {
+func makeupCoverage(currentCoverage, bookDir string, getFileHrefByID func(string) string, f func(string) ([]map[string]string, error)) (coverage string) {
+	if len(currentCoverage) <= 0 {
+		coverID := getCoverID(f)
+		if len(coverID) > 0 {
+			coverage = getFileHrefByID(coverID)
+		}
+	}
+
+	if len(coverage) > 0 {
+		coverage = path.Join(bookDir, coverage)
+	}
+	return
+}
+
+func trimSurplusPartOfTitle(current string) string {
+	if len(current) > 0 {
+		underscoreIndex := strings.Index(current, "_")
+		if underscoreIndex > 0 {
+			return current[:underscoreIndex]
+		}
+	}
+	return current
+}
+
+// NewEpub get metainfo from raw.Epub, and statistics charactor count, and copy files finally
+func NewEpub(src *raw.Epub, bookFilesDir string) (*Epub, error) {
 	epub := &Epub{
 		Navigations: NavigationPointArray{},
-		FileDir:     book_files_dir,
-		ID:          book_files_dir,
+		FileDir:     bookFilesDir,
+		ID:          bookFilesDir,
 	}
 	// spew.Dump(src)
 
-	meta_list := []string{"title", "language", "identifier", "creator", "subject", "description", "publisher", "contributor", "date", "type", "format", "source", "relation", "coverage", "rights"}
-	epub.MetaInfo = generateMetaInfo(meta_list, src.Metadata)
-
-	if len(epub.MetaInfo["coverage"]) <= 0 {
-		cover_id := getCover(src.MetadataAttr)
-		if len(cover_id) > 0 {
-			epub.MetaInfo["coverage"] = path.Join(src.GetFileHrefByID(cover_id))
-			// epub.MetaInfo["coverage"] = path.Join(book_files_dir, src.GetFileHrefByID(cover_id))
-		}
-	}
-
-	if len(epub.MetaInfo["coverage"]) > 0 {
-		epub.MetaInfo["coverage"] = path.Join(book_files_dir, epub.MetaInfo["coverage"])
-	}
-
-	title := epub.MetaInfo["title"]
-	if len(title) > 0 {
-		underscore_index := strings.Index(title, "_")
-		if underscore_index > 0 {
-			epub.MetaInfo["title"] = title[:underscore_index]
-		}
-	}
-
+	epub.MetaInfo = generateMetaInfo(metaList, src.Metadata)
+	epub.MetaInfo["coverage"] = makeupCoverage(epub.MetaInfo["coverage"], bookFilesDir, src.GetFileHrefByID, src.MetadataAttr)
+	epub.MetaInfo["title"] = trimSurplusPartOfTitle(epub.MetaInfo["title"])
 	epub.Navigations = generateNaviPoints(src.NavPoints(), 1, 1, "", nil)
 
 	err := epub.Navigations.Each(func(nav *NavigationPoint) error {
-		bs, err := readFileContent(src, nav.Url)
+		navCharactorCount, err := fillNavigationPoint(nav, epub.FileDir, src.OpenFile)
 		if err != nil {
 			return err
 		}
-		// bs = bom.CleanBom(bs)
-		text, err := html2Text(bs)
-		if err != nil {
-			return err
-		}
-		// fmt.Println("content: ")
-		// fmt.Println(string(bs))
-		// fmt.Println("text: ")
-		// fmt.Println(text)
-		nav.Text = text
 
-		content := getHtmlContent(bs)
-
-		nav.Url = path.Join(epub.FileDir, nav.Url)
-		nav.CharactorCountSelf = len(content)
-		nav.CharactorCountTotal = nav.CharactorCountSelf
-		epub.CharactorCount += nav.CharactorCountSelf
+		epub.CharactorCount += navCharactorCount
 		return nil
 	})
 	if err != nil {
@@ -118,22 +102,46 @@ func NewEpub(src *raw.Epub, book_files_dir string) (*Epub, error) {
 	return epub.copyFiles(src)
 }
 
+func fillNavigationPoint(nav *NavigationPoint, fileDir string, fileReader func(name string) (io.ReadCloser, error)) (int, error) {
+	bs, err := readFileContent(fileReader, nav.URL)
+	if err != nil {
+		return 0, err
+	}
+	text, err := html2Text(bs)
+	if err != nil {
+		return 0, err
+	}
+	// fmt.Println("content: ")
+	// fmt.Println(string(bs))
+	// fmt.Println("text: ")
+	// fmt.Println(text)
+	nav.Text = text
+
+	content := extractHTMLContent(bs)
+
+	nav.URL = path.Join(fileDir, nav.URL)
+	nav.CharactorCountSelf = len(content)
+	nav.CharactorCountTotal = nav.CharactorCountSelf
+	// epub.CharactorCount += nav.CharactorCountSelf
+	return nav.CharactorCountSelf, nil
+}
+
 // func (e *Epub) copyFiles(zipReader *raw.Epub, extract_dir string) (*Epub, error) {
 func (e *Epub) copyFiles(zipReader *raw.Epub) (*Epub, error) {
 	files := zipReader.Files()
 
 	for _, file := range files {
-		full_path := path.Join(e.FileDir, file)
-		// full_path := path.Join(extract_dir, e.FileDir, file)
-		err := os.MkdirAll(filepath.Dir(full_path), os.ModePerm)
+		fullPath := path.Join(e.FileDir, file)
+		// fullPath := path.Join(extract_dir, e.FileDir, file)
+		err := os.MkdirAll(filepath.Dir(fullPath), os.ModePerm)
 		if err != nil {
 			return nil, err
 		}
-		content, err := readFileContent(zipReader, file)
+		content, err := readFileContent(zipReader.OpenFile, file)
 		if err != nil {
 			return nil, err
 		}
-		err = ioutil.WriteFile(full_path, content, os.ModePerm)
+		err = ioutil.WriteFile(fullPath, content, os.ModePerm)
 		if err != nil {
 			return nil, err
 		}
@@ -141,8 +149,8 @@ func (e *Epub) copyFiles(zipReader *raw.Epub) (*Epub, error) {
 	return e, nil
 }
 
-func readFileContent(zipReader *raw.Epub, file string) ([]byte, error) {
-	closer, err := zipReader.OpenFile(file)
+func readFileContent(fileReader func(name string) (io.ReadCloser, error), file string) ([]byte, error) {
+	closer, err := fileReader(file)
 	if err != nil {
 		fmt.Println("[ERR] open file err: ", err)
 		return nil, err
@@ -155,29 +163,29 @@ func readFileContent(zipReader *raw.Epub, file string) ([]byte, error) {
 	return content, nil
 }
 
-func generateMetaInfo(meta_list []string, f func(string) ([]string, error)) map[string]string {
-	meta_info := make(map[string]string)
+func generateMetaInfo(metaList []string, f func(string) ([]string, error)) map[string]string {
+	metaInfo := make(map[string]string)
 
-	for _, meta := range meta_list {
+	for _, meta := range metaList {
 		ls, err := f(meta)
 		if err != nil {
 			fmt.Println("[TIP] get meta info: ", err)
 			ls = []string{}
 		}
-		meta_info[meta] = strings.Join(ls, " ")
+		metaInfo[meta] = strings.Join(ls, " ")
 	}
-	return meta_info
+	return metaInfo
 }
 
-func getCover(f func(string) ([]map[string]string, error)) string {
+func getCoverID(f func(string) ([]map[string]string, error)) string {
 
-	attributes_meta, err := f("meta")
+	attributesMeta, err := f("meta")
 	if err != nil {
 		fmt.Println("[ERR] get meta err: ", err)
 		return ""
 	}
-	spew.Dump(attributes_meta)
-	for _, atr := range attributes_meta {
+	// spew.Dump(attributesMeta)
+	for _, atr := range attributesMeta {
 		if name, exists := atr["name"]; exists && name == "cover" {
 			// fmt.Println("name -> ", name)
 			if content, exists := atr["content"]; exists {
@@ -197,46 +205,53 @@ func generateNaviPoints(nps raw.NavPointArray, IndexInList, level int, tagPre st
 		return points
 	}
 
-	head_np := nps[0]
-	point := NewNavigationPoint(head_np, level, IndexInList, tagPre)
+	headNp := nps[0]
+	point := NewNavigationPoint(headNp, level, IndexInList, tagPre)
 	points = append(points, point)
 
-	if head_np.Children() != nil {
-		points = append(points, generateNaviPoints(head_np.Children(), 1, level+1, point.Tag, nil)...)
+	if headNp.Children() != nil {
+		points = append(points, generateNaviPoints(headNp.Children(), 1, level+1, point.Tag, nil)...)
 	}
 
 	return generateNaviPoints(nps[1:], IndexInList+1, level, tagPre, points)
 }
 
+// Epub stands for an epub's info
 type Epub struct {
 	ID             string               `json:"id"`
 	Navigations    NavigationPointArray `json:"navigations"`
 	MetaInfo       map[string]string    `json:"meta"`
 	CharactorCount int                  `json:"charactor_count"`
-	Url            string               `json:"url"`
+	URL            string               `json:"url"`
 	FileDir        string               `json:"-"`
 }
 
+// SetCoverageIfEmpty set a cover if need
 func (e *Epub) SetCoverageIfEmpty(cover string) {
 	if len(e.MetaInfo["coverage"]) <= 0 {
-		e.MetaInfo["coverage"] = cover
+		// e.MetaInfo["coverage"] = cover
+		e.SetCoverage(cover)
 	}
 }
 
+// SetCoverage set coverage
 func (e *Epub) SetCoverage(cover string) {
 	e.MetaInfo["coverage"] = cover
 }
+
+// Meta returns field value
 func (e *Epub) Meta(field string) string {
 	if v, exists := e.MetaInfo[field]; exists {
 		return v
-	} else {
-		return ""
 	}
+	return ""
 }
 
-type EpubArray []*Epub
+// Array is Epub's list
+type Array []*Epub
 
-func (ea EpubArray) Find(p func(*Epub) bool) *Epub {
+// Find returns finded epub
+func (ea Array) Find(p func(*Epub) bool) *Epub {
 	if ea == nil {
 		return nil
 	}
@@ -248,16 +263,16 @@ func (ea EpubArray) Find(p func(*Epub) bool) *Epub {
 	return nil
 }
 
-func getHtmlContent(bs []byte) []rune {
+func extractHTMLContent(bs []byte) []rune {
 	src := string(bs)
 	//将HTML标签全转换成小写
 	re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
 	src = re.ReplaceAllStringFunc(src, strings.ToLower)
 
-	body_head := strings.Index(src, "<body>")
-	body_tail := strings.Index(src, "</body>")
-	if body_head >= 0 && body_tail >= 0 && body_tail > body_head {
-		src = src[body_head+6 : body_tail]
+	bodyHead := strings.Index(src, "<body>")
+	bodyTail := strings.Index(src, "</body>")
+	if bodyHead >= 0 && bodyTail >= 0 && bodyTail > bodyHead {
+		src = src[bodyHead+6 : bodyTail]
 	}
 	//去除STYLE
 	re, _ = regexp.Compile("\\<style[\\S\\s]+?\\</style\\>")
@@ -277,9 +292,9 @@ func getHtmlContent(bs []byte) []rune {
 
 	src = strings.Replace(src, "\n", "", -1)
 	src = strings.TrimSpace(src)
-	src_rune := []rune(src)
+	srcRune := []rune(src)
 
-	return src_rune
+	return srcRune
 }
 
 func html2Text(bs []byte) (string, error) {
